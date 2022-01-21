@@ -41,7 +41,7 @@ func initConfig() *AppConfig {
 	defaultConfig.Database.Port = 3306
 	defaultConfig.Database.Username = "todosadmin"
 	defaultConfig.Database.Password = "todos123"
-	defaultConfig.Database.Name = "e_commerces_test"
+	defaultConfig.Database.Name = "ecommerces_test"
 
 	viper.SetConfigType("yaml")
 	viper.SetConfigName("config")
