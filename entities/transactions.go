@@ -7,12 +7,11 @@ import (
 type Transaction struct {
 	gorm.Model
 	ID                    uint
-	Total                 int
 	Total_price           int
 	Total_qty             int
 	User_id               uint
-	PaymentID             uint
 	Status                string
+	Url                   string
 	Detail_transaction_ID []Detail_transaction
 }
 
@@ -23,12 +22,4 @@ type Detail_transaction struct {
 	Product_id     uint
 	Product_qty    int
 	Price          int
-}
-
-type Payment struct {
-	gorm.Model
-	ID           uint
-	Payment_type string
-	Link         string
-	Transaction  Transaction
 }
