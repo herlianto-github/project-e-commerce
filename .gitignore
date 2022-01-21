@@ -1,6 +1,0 @@
-configs/
-*.env
-utils/
-go.mod
-Dockerfile
-docker-compose.yaml
