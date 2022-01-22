@@ -4,14 +4,19 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"project-e-commerces/configs"
+	"project-e-commerces/constants"
+	"project-e-commerces/delivery/controllers/users"
 	"project-e-commerces/entities"
 	"project-e-commerces/utils"
 	"testing"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,23 +32,49 @@ func TestCarts(t *testing.T) {
 	db.AutoMigrate(&entities.Detail_cart{})
 
 	e := echo.New()
+	jwtToken := ""
+	t.Run("POST /users/login", func(t *testing.T) {
+		reqBody, _ := json.Marshal(map[string]string{
+			"name":     "TestName1",
+			"password": "TestPassword1",
+		})
 
-	t.Run("PUT /carts/additem/:id", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer(reqBody))
+		res := httptest.NewRecorder()
+
+		req.Header.Set("Content-Type", "application/json")
+		context := e.NewContext(req, res)
+		context.SetPath("/users/login")
+
+		userCon := users.NewUsersControllers(mockUserRepository{})
+		userCon.Login()(context)
+
+		responses := users.LoginUserResponseFormat{}
+		json.Unmarshal([]byte(res.Body.Bytes()), &responses)
+
+		jwtToken = responses.Token
+		assert.Equal(t, "Successful Operation", responses.Message)
+		assert.Equal(t, 200, res.Code)
+
+	})
+
+	t.Run("PUT /carts/additem", func(t *testing.T) {
 		reqBody, _ := json.Marshal(entities.Detail_cart{
 			ProductID: 1,
 			Qty:       1,
 		})
 		req := httptest.NewRequest(http.MethodPut, "/", bytes.NewBuffer(reqBody))
 		res := httptest.NewRecorder()
-
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwtToken))
 		req.Header.Set("Content-Type", "application/json")
 		context := e.NewContext(req, res)
-		context.SetPath("/carts/additem/:id")
-		context.SetParamNames("id")
-		context.SetParamValues("1")
+		context.SetPath("/carts/additem")
 
 		cartCon := NewCartsControllers(mockCartRepository{})
-		cartCon.PutItemIntoDetail_CartCtrl()(context)
+		if err := middleware.JWT([]byte(constants.JWT_SECRET_KEY))(cartCon.PutItemIntoDetail_CartCtrl())(context); err != nil {
+			log.Fatal(err)
+			return
+		}
 
 		responses := AddItemIntoDetail_CartResponsesFormat{}
 		json.Unmarshal([]byte(res.Body.Bytes()), &responses)
@@ -53,7 +84,7 @@ func TestCarts(t *testing.T) {
 
 	})
 
-	t.Run("DEL /carts/delitem:id", func(t *testing.T) {
+	t.Run("DEL /carts/delitem", func(t *testing.T) {
 		reqBody, _ := json.Marshal(entities.Detail_cart{
 			ProductID: 1,
 		})
@@ -61,14 +92,16 @@ func TestCarts(t *testing.T) {
 		req := httptest.NewRequest(http.MethodDelete, "/", bytes.NewBuffer(reqBody))
 		res := httptest.NewRecorder()
 
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwtToken))
 		req.Header.Set("Content-Type", "application/json")
 		context := e.NewContext(req, res)
-		context.SetPath("/carts/delitem:id")
-		context.SetParamNames("id")
-		context.SetParamValues("1")
+		context.SetPath("/carts/delitem")
 
 		cartCon := NewCartsControllers(mockCartRepository{})
-		cartCon.DeleteItemFromDetail_CartCtrl()(context)
+		if err := middleware.JWT([]byte(constants.JWT_SECRET_KEY))(cartCon.DeleteItemFromDetail_CartCtrl())(context); err != nil {
+			log.Fatal(err)
+			return
+		}
 
 		responses := DelItemIntoDetail_CartResponsesFormat{}
 		json.Unmarshal([]byte(res.Body.Bytes()), &responses)
@@ -92,7 +125,32 @@ func TestFalseCarts(t *testing.T) {
 
 	e := echo.New()
 
-	t.Run("PUT /carts/additem/:id", func(t *testing.T) {
+	jwtToken := ""
+	t.Run("POST /users/login", func(t *testing.T) {
+		reqBody, _ := json.Marshal(map[string]string{
+			"name":     "TestName1",
+			"password": "TestPassword1",
+		})
+
+		req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer(reqBody))
+		res := httptest.NewRecorder()
+
+		req.Header.Set("Content-Type", "application/json")
+		context := e.NewContext(req, res)
+		context.SetPath("/users/login")
+
+		userCon := users.NewUsersControllers(mockUserRepository{})
+		userCon.Login()(context)
+
+		responses := users.LoginUserResponseFormat{}
+		json.Unmarshal([]byte(res.Body.Bytes()), &responses)
+
+		jwtToken = responses.Token
+		assert.Equal(t, "Successful Operation", responses.Message)
+		assert.Equal(t, 200, res.Code)
+
+	})
+	t.Run("PUT /carts/additem", func(t *testing.T) {
 		reqBody, _ := json.Marshal(entities.Detail_cart{
 			ProductID: 1,
 			Qty:       1,
@@ -100,37 +158,16 @@ func TestFalseCarts(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPut, "/", bytes.NewBuffer(reqBody))
 		res := httptest.NewRecorder()
 
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwtToken))
 		req.Header.Set("Content-Type", "application/json")
 		context := e.NewContext(req, res)
-		context.SetPath("/carts/additem/:id")
-		context.SetParamNames("id")
-		context.SetParamValues("a")
+		context.SetPath("/carts/additem")
 
 		cartCon := NewCartsControllers(mockFalseCartRepository{})
-		cartCon.PutItemIntoDetail_CartCtrl()(context)
-
-		responses := AddItemIntoDetail_CartResponsesFormat{}
-		json.Unmarshal([]byte(res.Body.Bytes()), &responses)
-
-		assert.Equal(t, "Not Found", responses.Message)
-		assert.Equal(t, 404, res.Code)
-
-	})
-	t.Run("PUT /carts/additem/:id", func(t *testing.T) {
-		reqBody, _ := json.Marshal(entities.Detail_cart{
-			ProductID: 1,
-		})
-		req := httptest.NewRequest(http.MethodPut, "/", bytes.NewBuffer(reqBody))
-		res := httptest.NewRecorder()
-
-		req.Header.Set("Content-Type", "application/json")
-		context := e.NewContext(req, res)
-		context.SetPath("/carts/additem/:id")
-		context.SetParamNames("id")
-		context.SetParamValues("1")
-
-		cartCon := NewCartsControllers(mockFalseCartRepository{})
-		cartCon.PutItemIntoDetail_CartCtrl()(context)
+		if err := middleware.JWT([]byte(constants.JWT_SECRET_KEY))(cartCon.PutItemIntoDetail_CartCtrl())(context); err != nil {
+			log.Fatal(err)
+			return
+		}
 
 		responses := AddItemIntoDetail_CartResponsesFormat{}
 		json.Unmarshal([]byte(res.Body.Bytes()), &responses)
@@ -139,21 +176,23 @@ func TestFalseCarts(t *testing.T) {
 		assert.Equal(t, 500, res.Code)
 
 	})
-	t.Run("PUT /carts/additem/:id", func(t *testing.T) {
-		reqBody, _ := json.Marshal(map[string]string{
-			"product_id": "1",
+	t.Run("PUT /carts/additem", func(t *testing.T) {
+		reqBody, _ := json.Marshal(map[string]interface{}{
+			"product_id": "a",
 		})
 		req := httptest.NewRequest(http.MethodPut, "/", bytes.NewBuffer(reqBody))
 		res := httptest.NewRecorder()
 
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwtToken))
 		req.Header.Set("Content-Type", "application/json")
 		context := e.NewContext(req, res)
-		context.SetPath("/carts/additem/:id")
-		context.SetParamNames("id")
-		context.SetParamValues("1")
+		context.SetPath("/carts/additem")
 
-		cartCon := NewCartsControllers(mockFalseCartRepository{})
-		cartCon.PutItemIntoDetail_CartCtrl()(context)
+		cartCon := NewCartsControllers(mockCartRepository{})
+		if err := middleware.JWT([]byte(constants.JWT_SECRET_KEY))(cartCon.PutItemIntoDetail_CartCtrl())(context); err != nil {
+			log.Fatal(err)
+			return
+		}
 
 		responses := AddItemIntoDetail_CartResponsesFormat{}
 		json.Unmarshal([]byte(res.Body.Bytes()), &responses)
@@ -162,6 +201,7 @@ func TestFalseCarts(t *testing.T) {
 		assert.Equal(t, 400, res.Code)
 
 	})
+
 	t.Run("DEL /carts/delitem:id", func(t *testing.T) {
 		reqBody, _ := json.Marshal(entities.Detail_cart{
 			ProductID: 1,
@@ -170,38 +210,16 @@ func TestFalseCarts(t *testing.T) {
 		req := httptest.NewRequest(http.MethodDelete, "/", bytes.NewBuffer(reqBody))
 		res := httptest.NewRecorder()
 
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwtToken))
 		req.Header.Set("Content-Type", "application/json")
 		context := e.NewContext(req, res)
-		context.SetPath("/carts/delitem:id")
-		context.SetParamNames("id")
-		context.SetParamValues("a")
+		context.SetPath("/carts/delitem")
 
 		cartCon := NewCartsControllers(mockFalseCartRepository{})
-		cartCon.DeleteItemFromDetail_CartCtrl()(context)
-
-		responses := DelItemIntoDetail_CartResponsesFormat{}
-		json.Unmarshal([]byte(res.Body.Bytes()), &responses)
-
-		assert.Equal(t, "Not Found", responses.Message)
-		assert.Equal(t, 404, res.Code)
-
-	})
-	t.Run("DEL /carts/delitem:id", func(t *testing.T) {
-		reqBody, _ := json.Marshal(entities.Detail_cart{
-			ProductID: 1,
-		})
-
-		req := httptest.NewRequest(http.MethodDelete, "/", bytes.NewBuffer(reqBody))
-		res := httptest.NewRecorder()
-
-		req.Header.Set("Content-Type", "application/json")
-		context := e.NewContext(req, res)
-		context.SetPath("/carts/delitem:id")
-		context.SetParamNames("id")
-		context.SetParamValues("1")
-
-		cartCon := NewCartsControllers(mockFalseCartRepository{})
-		cartCon.DeleteItemFromDetail_CartCtrl()(context)
+		if err := middleware.JWT([]byte(constants.JWT_SECRET_KEY))(cartCon.DeleteItemFromDetail_CartCtrl())(context); err != nil {
+			log.Fatal(err)
+			return
+		}
 
 		responses := DelItemIntoDetail_CartResponsesFormat{}
 		json.Unmarshal([]byte(res.Body.Bytes()), &responses)
@@ -211,21 +229,23 @@ func TestFalseCarts(t *testing.T) {
 
 	})
 	t.Run("DEL /carts/delitem:id", func(t *testing.T) {
-		reqBody, _ := json.Marshal(map[string]string{
-			"product_id": "1",
+		reqBody, _ := json.Marshal(map[string]interface{}{
+			"product_id": "b",
 		})
 
 		req := httptest.NewRequest(http.MethodDelete, "/", bytes.NewBuffer(reqBody))
 		res := httptest.NewRecorder()
 
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwtToken))
 		req.Header.Set("Content-Type", "application/json")
 		context := e.NewContext(req, res)
-		context.SetPath("/carts/delitem:id")
-		context.SetParamNames("id")
-		context.SetParamValues("1")
+		context.SetPath("/carts/delitem")
 
-		cartCon := NewCartsControllers(mockFalseCartRepository{})
-		cartCon.DeleteItemFromDetail_CartCtrl()(context)
+		cartCon := NewCartsControllers(mockCartRepository{})
+		if err := middleware.JWT([]byte(constants.JWT_SECRET_KEY))(cartCon.DeleteItemFromDetail_CartCtrl())(context); err != nil {
+			log.Fatal(err)
+			return
+		}
 
 		responses := DelItemIntoDetail_CartResponsesFormat{}
 		json.Unmarshal([]byte(res.Body.Bytes()), &responses)
@@ -234,6 +254,31 @@ func TestFalseCarts(t *testing.T) {
 		assert.Equal(t, 400, res.Code)
 
 	})
+
+}
+
+type mockUserRepository struct{}
+
+func (mur mockUserRepository) Login(name, password string) (entities.User, error) {
+	return entities.User{ID: 1, Name: "TestName1", Password: "TestPassword1"}, nil
+}
+
+func (mur mockUserRepository) GetAll() ([]entities.User, error) {
+	return []entities.User{
+		{Name: "TestName1", Password: "TestPassword1"},
+	}, nil
+}
+func (mur mockUserRepository) Get(userId int) (entities.User, error) {
+	return entities.User{Name: "TestName1", Password: "TestPassword1"}, nil
+}
+func (mur mockUserRepository) Create(newUser entities.User) (entities.User, error) {
+	return entities.User{Name: "TestName1", Password: "TestPassword1"}, nil
+}
+func (mur mockUserRepository) Update(updateUser entities.User, userId int) (entities.User, error) {
+	return entities.User{Name: "TestName1", Password: "TestPassword1"}, nil
+}
+func (mur mockUserRepository) Delete(userId int) (entities.User, error) {
+	return entities.User{ID: 1, Name: "TestName1", Password: "TestPassword1"}, nil
 }
 
 type mockCartRepository struct{}
