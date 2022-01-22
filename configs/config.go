@@ -37,10 +37,10 @@ func initConfig() *AppConfig {
 	var defaultConfig AppConfig
 	defaultConfig.Port = 8000
 	defaultConfig.Database.Driver = "mysql"
-	defaultConfig.Database.Address = "localhost"
+	defaultConfig.Database.Address = "database-ku.cwid5dwr9dfn.ap-southeast-1.rds.amazonaws.com"
 	defaultConfig.Database.Port = 3306
-	defaultConfig.Database.Username = "root"
-	defaultConfig.Database.Password = "11223344"
+	defaultConfig.Database.Username = "todosadmin"
+	defaultConfig.Database.Password = "todos123"
 	defaultConfig.Database.Name = "ecommerces_test"
 
 	viper.SetConfigType("yaml")
