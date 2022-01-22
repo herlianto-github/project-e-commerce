@@ -3,91 +3,69 @@ package users
 import (
 	"project-e-commerces/entities"
 
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
-type UserInterface interface {
-	// Register and Login
-	Register(user entities.User) (entities.User, error)
-	// Login(email, password string) (entities.User, error)
-	Login(email string) (entities.User, error)
-	// CRUD
-	Get(userId int) (entities.User, error)
-	Update(customer entities.User) (entities.User, error)
-	Delete(userId int) error
-}
-
-type UserStructRepository struct {
+type UserRepository struct {
 	db *gorm.DB
 }
 
-func NewRepository(db *gorm.DB) *UserStructRepository {
-	return &UserStructRepository{db}
+func NewUsersRepo(db *gorm.DB) *UserRepository {
+	return &UserRepository{db: db}
 }
 
-func (ur *UserStructRepository) Register(user entities.User) (entities.User, error) {
-	userData := []entities.User{}
+func (ur *UserRepository) GetAll() ([]entities.User, error) {
+	users := []entities.User{}
+	ur.db.Find(&users)
+	return users, nil
+}
+
+func (ur *UserRepository) Get(userId int) (entities.User, error) {
+	user := entities.User{}
+	ur.db.Find(&user, userId)
+	return user, nil
+}
+
+func (ur *UserRepository) Create(newUser entities.User) (entities.User, error) {
+
 	cartData := entities.Cart{
 		Total_Product: 0,
 		Total_price:   0,
 	}
 	ur.db.Save(&cartData)
-	ur.db.Find(&userData)
-	user.CartID = cartData.ID
-	if err := ur.db.Save(&user).Error; err != nil {
-		return user, err
+	ur.db.Find(&newUser)
+	newUser.CartID = cartData.ID
+	if err := ur.db.Save(&newUser).Error; err != nil {
+		return newUser, nil
 	}
+
+	return newUser, nil
+}
+
+func (ur *UserRepository) Login(name, password string) (entities.User, error) {
+	var user entities.User
+	getPass := entities.User{}
+	ur.db.Select("password").Where("Name = ?", name).Find(&getPass)
+	bcrypt.CompareHashAndPassword([]byte(getPass.Password), []byte(password))
+	ur.db.Where("Name = ?", name).Find(&user)
+
 	return user, nil
 }
+func (ur *UserRepository) Update(updateUser entities.User, userId int) (entities.User, error) {
+	user := entities.User{}
+	ur.db.Find(&user, "id=?", userId)
 
-func (ur *UserStructRepository) Login(email string) (entities.User, error) {
-	// login := entities.User{
-	// 	Email:    email,
-	// 	Password: password,
-	// }
-	// if err := ur.db.First(&login).Error; err != nil {
-	// 	return login, nil
-	// }
-	// return login, nil
+	user.Name = updateUser.Name
+	user.Password = updateUser.Password
 
-	// var user entities.User
-	// // err := ur.db.First(&user, "email = ?", email).Error
-	// err := ur.db.Where("email = ?", email).Find(&user).Error
-	// if err != nil {
-	// 	return user, err
-	// }
-	// return user, nil
+	ur.db.Save(&user)
+	return updateUser, nil
+}
 
-	var user entities.User
-	err := ur.db.First(&user, "email = ?", email).Error
-	if err != nil {
-		return user, err
-	}
+func (ur *UserRepository) Delete(userId int) (entities.User, error) {
+	user := entities.User{}
+	ur.db.Find(&user, "id=?", userId)
+	ur.db.Delete(&user)
 	return user, nil
-}
-
-func (ur *UserStructRepository) Get(userId int) (entities.User, error) {
-	var user entities.User
-	if err := ur.db.Find(&user, userId).Error; err != nil {
-		return user, err
-	}
-	return user, nil
-
-}
-func (ur *UserStructRepository) Update(user entities.User) (entities.User, error) {
-	err := ur.db.Save(&user).Error
-	if err != nil {
-		return user, err
-	}
-
-	return user, err
-}
-
-func (ur *UserStructRepository) Delete(id int) error {
-	var user entities.User
-	err := ur.db.Unscoped().Delete(&user, id).Error
-	if err != nil {
-		return err
-	}
-	return err
 }

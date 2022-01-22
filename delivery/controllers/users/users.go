@@ -1,101 +1,176 @@
-package controllers
+package users
 
 import (
 	"net/http"
-	"project-e-commerces/entities"
-	repository "project-e-commerces/repository/users"
-
+	"project-e-commerces/constants"
 	"project-e-commerces/delivery/common"
+	"project-e-commerces/entities"
+	"project-e-commerces/repository/users"
+	"strconv"
+	"time"
 
+	"golang.org/x/crypto/bcrypt"
+
+	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 )
 
-type UserController struct {
-	Repo repository.UserInterface
+type UsersController struct {
+	Repo users.UserInterface
 }
 
-func NewUserController(user repository.UserInterface) *UserController {
-	return &UserController{user}
+func NewUsersControllers(usrep users.UserInterface) *UsersController {
+	return &UsersController{Repo: usrep}
 }
 
-//================
-//REGISTER & LOGIN
-//================
-func (uc UserController) Register(c echo.Context) error {
-	var user entities.User
-	c.Bind(&user)
-	hash, _ := Hashpwd(user.Password)
-	user.Password = hash
-
-	res, err := uc.Repo.Register(user)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, err.Error())
-	}
-
-	return c.JSON(http.StatusOK, res)
+func CreateTokenAuth(id uint) (string, error) {
+	claims := jwt.MapClaims{}
+	claims["authorized"] = true
+	claims["userid"] = id
+	claims["exp"] = time.Now().Add(time.Hour * 1).Unix()
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(constants.JWT_SECRET_KEY))
 }
 
-func (uc UserController) Login(c echo.Context) error {
-	var login entities.User
-	c.Bind(&login)
+// POST /user/login
+func (uscon UsersController) Login() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		loginFormat := LoginRequestFormat{}
+		if err := c.Bind(&loginFormat); err != nil {
+			return c.JSON(http.StatusBadRequest, common.NewBadRequestResponse())
+		}
+		checkedUser, err := uscon.Repo.Login(loginFormat.Name, loginFormat.Password)
 
-	user, err := uc.Repo.Login(login.Email)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		if err != nil || checkedUser.ID != 0 {
+			if loginFormat.Name != "" && loginFormat.Password != "" {
+				token, _ := CreateTokenAuth(checkedUser.ID)
+
+				return c.JSON(
+					http.StatusOK, map[string]interface{}{
+						"message": "Successful Operation",
+						"token":   token,
+					},
+				)
+			}
+		}
+		return c.JSON(http.StatusNotFound, common.NewNotFoundResponse())
+
 	}
-
-	hash, err := Checkpwd(user.Password, login.Password)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, err.Error())
-	}
-
-	var token string
-
-	if hash {
-		token, _ = CreateToken(int(user.ID), user.Role)
-	}
-
-	return c.JSON(http.StatusOK, common.SuccessResponse(token))
 }
 
-//================
-//RUD USER
-//================
-func (uc UserController) Get(c echo.Context) error {
-	userId := ExtractTokenUserId(c)
-	// userId, _ := strconv.Atoi(c.Param("id"))
-	user, err := uc.Repo.Get(userId)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+// POST /user/register
+func (uscon UsersController) PostUserCtrl() echo.HandlerFunc {
+
+	return func(c echo.Context) error {
+		newUserReq := RegisterUserRequestFormat{}
+
+		if err := c.Bind(&newUserReq); err != nil {
+			return c.JSON(http.StatusBadRequest, common.NewBadRequestResponse())
+		}
+
+		hash, _ := bcrypt.GenerateFromPassword([]byte(newUserReq.Password), 14)
+		newUser := entities.User{
+			Name:     newUserReq.Name,
+			Password: string(hash),
+		}
+
+		_, err := uscon.Repo.Create(newUser)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, common.NewInternalServerErrorResponse())
+		}
+
+		return c.JSON(http.StatusOK, common.NewSuccessOperationResponse())
 	}
-	return c.JSON(http.StatusOK, common.SuccessResponse(user))
+
 }
 
-func (uc UserController) Delete(c echo.Context) error {
-	userId := ExtractTokenUserId(c)
-	// userId, _ := strconv.Atoi(c.Param("id"))
-	err := uc.Repo.Delete(userId)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+// GET /users
+func (uscon UsersController) GetUsersCtrl() echo.HandlerFunc {
+
+	return func(c echo.Context) error {
+		user, err := uscon.Repo.GetAll()
+
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, common.NewInternalServerErrorResponse())
+		}
+
+		response := GetUsersResponseFormat{
+			Message: "Successful Opration",
+			Data:    user,
+		}
+
+		return c.JSON(http.StatusOK, response)
 	}
-	return c.JSON(http.StatusOK, common.SuccessResponse(err))
 }
 
-func (uc UserController) Update(c echo.Context) error {
-	userId := ExtractTokenUserId(c)
-	user, err := uc.Repo.Get(userId)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+// GET /users/:id
+func (uscon UsersController) GetUserCtrl() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("id"))
+
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, common.NewBadRequestResponse())
+		}
+
+		user, err := uscon.Repo.Get(id)
+		if err != nil {
+			return c.JSON(http.StatusNotFound, common.NewNotFoundResponse())
+		}
+
+		return c.JSON(http.StatusOK, map[string]interface{}{
+			"message": "success",
+			"data":    user,
+		})
 	}
-	var tmpUser entities.User
-	c.Bind((&tmpUser))
-	user.Name = tmpUser.Name
-	user.Email = tmpUser.Email
-	hash, _ := Hashpwd(tmpUser.Password)
-	user.Password = hash
-	userRes, err := uc.Repo.Update(user)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+
+}
+
+// PUT /users/:id
+func (uscon UsersController) EditUserCtrl() echo.HandlerFunc {
+
+	return func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("id"))
+
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, common.NewBadRequestResponse())
+		}
+
+		updateUserReq := PutUserRequestFormat{}
+		if err := c.Bind(&updateUserReq); err != nil {
+			return c.JSON(http.StatusBadRequest, common.NewBadRequestResponse())
+		}
+
+		updateUser := entities.User{
+			Name:     updateUserReq.Name,
+			Password: updateUserReq.Password,
+		}
+
+		if _, err := uscon.Repo.Update(updateUser, id); err != nil {
+			return c.JSON(http.StatusNotFound, common.NewNotFoundResponse())
+		}
+		return c.JSON(http.StatusOK, common.NewSuccessOperationResponse())
 	}
-	return c.JSON(http.StatusOK, userRes)
+
+}
+
+// DELETE /users/:id
+func (uscon UsersController) DeleteUserCtrl() echo.HandlerFunc {
+
+	return func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("id"))
+
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, common.NewBadRequestResponse())
+		}
+
+		deletedUser, _ := uscon.Repo.Delete(id)
+
+		if deletedUser.ID != 0 {
+			return c.JSON(http.StatusOK, common.NewSuccessOperationResponse())
+		} else {
+			return c.JSON(http.StatusNotFound, common.NewNotFoundResponse())
+		}
+
+	}
+
 }

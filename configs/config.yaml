@@ -2,7 +2,7 @@ port: 8000
 database:
   driver: "mysql"
   name: "ecommerces"
-  address: "database-ku.cwid5dwr9dfn.ap-southeast-1.rds.amazonaws.com"
+  address: "localhost"
   port: 3306
-  username: "todosadmin"
-  password: "todos123"
+  username: "root"
+  password: "11223344"

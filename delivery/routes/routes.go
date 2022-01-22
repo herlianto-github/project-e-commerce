@@ -1,41 +1,41 @@
 package routes
 
 import (
+	"project-e-commerces/constants"
 	"project-e-commerces/delivery/controllers/carts"
 	"project-e-commerces/delivery/controllers/categorys"
 	"project-e-commerces/delivery/controllers/products"
 	"project-e-commerces/delivery/controllers/transactions"
-
-	"project-e-commerces/constants"
-	controllers "project-e-commerces/delivery/controllers/users"
+	"project-e-commerces/delivery/controllers/users"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
-func RegisterUserPath(e *echo.Echo, uc controllers.UserController) {
-	// e.Pre(middleware.RemoveTrailingSlash())
-	// auth := e.Group("")
-	// auth.Use(middleware.JWT([]byte(constants.JWT_SECRET_KEY)))
+func RegisterPath(e *echo.Echo, uctrl *users.UsersController, crCtrl *carts.CartsController, tsCtrl *transactions.TransactionsController, cc *categorys.CategoryController, pc *products.ProductController) {
 
-	//REGISTER & LOGIN
-	e.POST("/users/register", uc.Register)
-	e.POST("/users/login", uc.Login)
+	// ---------------------------------------------------------------------
+	// Login & Register
+	// ---------------------------------------------------------------------
+	e.POST("/users/register", uctrl.PostUserCtrl())
+	e.POST("/users/login", uctrl.Login())
 
-	//RUD USER
-	e.GET("/users/profile", uc.Get, middleware.JWT([]byte(constants.JWT_SECRET_KEY)))
-	e.DELETE("/users/delete", uc.Delete, middleware.JWT([]byte(constants.JWT_SECRET_KEY)))
-	e.PUT("/users/update", uc.Update, middleware.JWT([]byte(constants.JWT_SECRET_KEY)))
+	// ---------------------------------------------------------------------
+	// CRUD Users
+	// ---------------------------------------------------------------------
+	e.GET("/users", uctrl.GetUsersCtrl(), middleware.JWT([]byte(constants.JWT_SECRET_KEY)))
+	e.GET("/users/:id", uctrl.GetUserCtrl(), middleware.JWT([]byte(constants.JWT_SECRET_KEY)))
+	e.PUT("/users/:id", uctrl.EditUserCtrl(), middleware.JWT([]byte(constants.JWT_SECRET_KEY)))
+	e.DELETE("/users/:id", uctrl.DeleteUserCtrl(), middleware.JWT([]byte(constants.JWT_SECRET_KEY)))
 
-}
+	// ---------------------------------------------------------------------
+	// CRUD Carts
+	// ---------------------------------------------------------------------
+	e.PUT("/carts/additem", crCtrl.PutItemIntoDetail_CartCtrl(), middleware.JWT([]byte(constants.JWT_SECRET_KEY)))
+	e.DELETE("/carts/delitem", crCtrl.DeleteItemFromDetail_CartCtrl(), middleware.JWT([]byte(constants.JWT_SECRET_KEY)))
 
-func RegisterPath(e *echo.Echo, crCtrl *carts.CartsController, tsCtrl *transactions.TransactionsController, cc *categorys.CategoryController, pc *products.ProductController) {
-
-	e.PUT("/carts/additem/:id", crCtrl.PutItemIntoDetail_CartCtrl())
-	e.DELETE("/carts/delitem/:id", crCtrl.DeleteItemFromDetail_CartCtrl())
-
-	e.POST("/transactions/live/:id", tsCtrl.PostProductIntoTransactionCtrl())
-	e.POST("/transactions/cart/:id", tsCtrl.PostCartIntoTransactionCtrl())
+	e.POST("/transactions/live", tsCtrl.PostProductIntoTransactionCtrl(), middleware.JWT([]byte(constants.JWT_SECRET_KEY)))
+	e.POST("/transactions/cart", tsCtrl.PostCartIntoTransactionCtrl(), middleware.JWT([]byte(constants.JWT_SECRET_KEY)))
 
 	e.GET("/categorys", cc.GetAllCategory)
 	e.GET("/categorys/:id", cc.GetCategoryByID)
