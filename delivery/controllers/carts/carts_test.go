@@ -22,15 +22,6 @@ import (
 
 func TestCarts(t *testing.T) {
 
-	config := configs.GetConfig()
-	db := utils.InitDB(config)
-
-	db.Migrator().DropTable(&entities.Detail_cart{})
-	db.Migrator().DropTable(&entities.Cart{})
-
-	db.AutoMigrate(&entities.Cart{})
-	db.AutoMigrate(&entities.Detail_cart{})
-
 	e := echo.New()
 	jwtToken := ""
 	t.Run("POST /users/login", func(t *testing.T) {
