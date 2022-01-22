@@ -35,7 +35,7 @@ func TestCarts(t *testing.T) {
 	jwtToken := ""
 	t.Run("POST /users/login", func(t *testing.T) {
 		reqBody, _ := json.Marshal(map[string]string{
-			"name":     "TestName1",
+			"email":    "Test@email.com",
 			"password": "TestPassword1",
 		})
 
@@ -56,6 +56,27 @@ func TestCarts(t *testing.T) {
 		assert.Equal(t, "Successful Operation", responses.Message)
 		assert.Equal(t, 200, res.Code)
 
+	})
+
+	t.Run("GET /carts", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPut, "/", nil)
+		res := httptest.NewRecorder()
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwtToken))
+		req.Header.Set("Content-Type", "application/json")
+		context := e.NewContext(req, res)
+		context.SetPath("/carts")
+
+		cartCon := NewCartsControllers(mockCartRepository{})
+		if err := middleware.JWT([]byte(constants.JWT_SECRET_KEY))(cartCon.Gets())(context); err != nil {
+			log.Fatal(err)
+			return
+		}
+
+		responses := AddItemIntoDetail_CartResponsesFormat{}
+		json.Unmarshal([]byte(res.Body.Bytes()), &responses)
+
+		assert.Equal(t, "Successful Operation", responses.Message)
+		assert.Equal(t, 200, res.Code)
 	})
 
 	t.Run("PUT /carts/additem", func(t *testing.T) {
@@ -128,7 +149,7 @@ func TestFalseCarts(t *testing.T) {
 	jwtToken := ""
 	t.Run("POST /users/login", func(t *testing.T) {
 		reqBody, _ := json.Marshal(map[string]string{
-			"name":     "TestName1",
+			"email":    "Test@email.com",
 			"password": "TestPassword1",
 		})
 
@@ -150,6 +171,28 @@ func TestFalseCarts(t *testing.T) {
 		assert.Equal(t, 200, res.Code)
 
 	})
+
+	t.Run("GET /carts", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPut, "/", nil)
+		res := httptest.NewRecorder()
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwtToken))
+		req.Header.Set("Content-Type", "application/json")
+		context := e.NewContext(req, res)
+		context.SetPath("/carts")
+
+		cartCon := NewCartsControllers(mockFalseCartRepository{})
+		if err := middleware.JWT([]byte(constants.JWT_SECRET_KEY))(cartCon.Gets())(context); err != nil {
+			log.Fatal(err)
+			return
+		}
+
+		responses := AddItemIntoDetail_CartResponsesFormat{}
+		json.Unmarshal([]byte(res.Body.Bytes()), &responses)
+
+		assert.Equal(t, "Internal Server Error", responses.Message)
+		assert.Equal(t, 500, res.Code)
+	})
+
 	t.Run("PUT /carts/additem", func(t *testing.T) {
 		reqBody, _ := json.Marshal(entities.Detail_cart{
 			ProductID: 1,
@@ -260,7 +303,7 @@ func TestFalseCarts(t *testing.T) {
 type mockUserRepository struct{}
 
 func (mur mockUserRepository) Login(name, password string) (entities.User, error) {
-	return entities.User{ID: 1, Name: "TestName1", Password: "TestPassword1"}, nil
+	return entities.User{ID: 1, Email: "Test@email.com", Password: "TestPassword1"}, nil
 }
 
 func (mur mockUserRepository) GetAll() ([]entities.User, error) {
@@ -284,7 +327,7 @@ func (mur mockUserRepository) Delete(userId int) (entities.User, error) {
 type mockCartRepository struct{}
 
 func (mcr mockCartRepository) Get(cartID uint) ([]entities.Detail_cart, error) {
-	return []entities.Detail_cart{}, nil
+	return []entities.Detail_cart{{ID: 1}}, nil
 }
 
 func (mcr mockCartRepository) Insert(newCart entities.Cart) (entities.Cart, error) {

@@ -20,16 +20,11 @@ func NewCartsControllers(crrep carts.CartInterface) *CartsController {
 
 func (crrep CartsController) Gets() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		carts := GetsDetail_CartRequestFormat{}
-		if err := c.Bind(&carts); err != nil {
-			return c.JSON(http.StatusBadRequest, common.NewBadRequestResponse())
-		}
-
 		uid := c.Get("user").(*jwt.Token)
 		claims := uid.Claims.(jwt.MapClaims)
 		cartID := int(claims["userid"].(float64))
 
-		if res, err := crrep.Repo.Get(uint(cartID)); err != nil {
+		if res, err := crrep.Repo.Get(uint(cartID)); err != nil || len(res) == 0 {
 			return c.JSON(http.StatusInternalServerError, common.NewInternalServerErrorResponse())
 		} else {
 			return c.JSON(http.StatusOK, map[string]interface{}{
