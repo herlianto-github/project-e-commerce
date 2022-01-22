@@ -147,9 +147,10 @@ func (uscon UsersController) EditUserCtrl() echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, common.NewBadRequestResponse())
 		}
 
+		hash, _ := bcrypt.GenerateFromPassword([]byte(updateUserReq.Password), 14)
 		updateUser := entities.User{
 			Name:     updateUserReq.Name,
-			Password: updateUserReq.Password,
+			Password: string(hash),
 		}
 
 		if _, err := uscon.Repo.Update(updateUser, id); err != nil {
