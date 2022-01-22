@@ -8,13 +8,10 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
-	"project-e-commerces/configs"
 	"project-e-commerces/constants"
-	"project-e-commerces/repository/users"
 
 	"project-e-commerces/entities"
 
-	"project-e-commerces/utils"
 	"testing"
 
 	"github.com/labstack/echo/v4"
@@ -24,25 +21,11 @@ import (
 
 func TestUsers(t *testing.T) {
 
-	config := configs.GetConfig()
-	db := utils.InitDB(config)
-	db.Migrator().DropTable(&entities.User{})
-	db.AutoMigrate(&entities.User{})
-
-	var dummyUser entities.User
-	dummyUser.Name = "TestName1"
-	dummyUser.Password = "TestPassword1"
-
-	useRep := users.NewUsersRepo(db)
-	_, err := useRep.Create(dummyUser)
-	if err != nil {
-		fmt.Println(err)
-	}
 	ec := echo.New()
 
 	t.Run("POST /users/register", func(t *testing.T) {
 		reqBody, _ := json.Marshal(map[string]string{
-			"name":     "TestName1",
+			"email":    "Test1@email.com",
 			"password": "TestPassword1",
 		})
 
@@ -63,10 +46,11 @@ func TestUsers(t *testing.T) {
 		assert.Equal(t, 200, res.Code)
 
 	})
+
 	jwtToken := ""
 	t.Run("POST /users/login", func(t *testing.T) {
 		reqBody, _ := json.Marshal(map[string]string{
-			"name":     "TestName1",
+			"email":    "Test1@email.com",
 			"password": "TestPassword1",
 		})
 
@@ -105,7 +89,7 @@ func TestUsers(t *testing.T) {
 
 		var responses GetUsersResponseFormat
 		json.Unmarshal([]byte(res.Body.Bytes()), &responses)
-		assert.Equal(t, responses.Data[0].Name, "TestName1")
+		assert.Equal(t, responses.Data[0].Email, "Test1@email.com")
 
 	})
 	t.Run("GET /users/:id", func(t *testing.T) {
@@ -128,12 +112,12 @@ func TestUsers(t *testing.T) {
 
 		var responses GetUserResponseFormat
 		json.Unmarshal([]byte(res.Body.Bytes()), &responses)
-		assert.Equal(t, responses.Data.Name, responses.Data.Name)
+		assert.Equal(t, responses.Data.Email, "Test1@email.com")
 	})
 	t.Run("PUT /users/:id", func(t *testing.T) {
 		reqBody, _ := json.Marshal(map[string]string{
-			"name":     "TestName1",
-			"password": "TestPassword1",
+			"name":     "TestName1Update",
+			"password": "TestPassword1Update",
 		})
 		req := httptest.NewRequest(http.MethodPut, "/", bytes.NewBuffer(reqBody))
 		res := httptest.NewRecorder()
@@ -185,6 +169,7 @@ func TestUsers(t *testing.T) {
 }
 
 func TestFalseUsers(t *testing.T) {
+
 	e := echo.New()
 
 	t.Run("POST /users/register", func(t *testing.T) {
@@ -228,7 +213,7 @@ func TestFalseUsers(t *testing.T) {
 	})
 	t.Run("POST /users/login", func(t *testing.T) {
 		reqBody, _ := json.Marshal(map[string]int{
-			"name": 1,
+			"email": 1,
 		})
 
 		req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer(reqBody))
@@ -425,47 +410,47 @@ func TestFalseUsers(t *testing.T) {
 type mockUserRepository struct{}
 
 func (mur mockUserRepository) Login(name, password string) (entities.User, error) {
-	return entities.User{ID: 1, Name: "TestName1", Password: "TestPassword1"}, nil
+	return entities.User{ID: 1, Email: "Test1@email.com", Password: "TestPassword1"}, nil
 }
 
 func (mur mockUserRepository) GetAll() ([]entities.User, error) {
 	return []entities.User{
-		{Name: "TestName1", Password: "TestPassword1"},
+		{Email: "Test1@email.com", Password: "TestPassword1"},
 	}, nil
 }
 func (mur mockUserRepository) Get(userId int) (entities.User, error) {
-	return entities.User{Name: "TestName1", Password: "TestPassword1"}, nil
+	return entities.User{Email: "Test1@email.com", Password: "TestPassword1"}, nil
 }
 func (mur mockUserRepository) Create(newUser entities.User) (entities.User, error) {
-	return entities.User{Name: "TestName1", Password: "TestPassword1"}, nil
+	return entities.User{Email: "Test1@email.com", Password: "TestPassword1"}, nil
 }
 func (mur mockUserRepository) Update(updateUser entities.User, userId int) (entities.User, error) {
-	return entities.User{Name: "TestName1", Password: "TestPassword1"}, nil
+	return entities.User{Email: "Test1@email.com", Password: "TestPassword1"}, nil
 }
 func (mur mockUserRepository) Delete(userId int) (entities.User, error) {
-	return entities.User{ID: 1, Name: "TestName1", Password: "TestPassword1"}, nil
+	return entities.User{ID: 1, Email: "Test1@email.com", Password: "TestPassword1"}, nil
 }
 
 type mockFalseUserRepository struct{}
 
 func (mur mockFalseUserRepository) Login(name, password string) (entities.User, error) {
-	return entities.User{ID: 1, Name: "TestName1", Password: "TestPassword1"}, errors.New("Bad Request")
+	return entities.User{ID: 2, Email: "Test2@email.com", Password: "TestPassword2"}, errors.New("Bad Request")
 }
 
 func (mur mockFalseUserRepository) GetAll() ([]entities.User, error) {
 	return []entities.User{
-		{Name: "TestName1", Password: "TestPassword1"},
+		{Email: "Test2@email.com", Password: "TestPassword2"},
 	}, errors.New("Bad Request")
 }
 func (mur mockFalseUserRepository) Get(userId int) (entities.User, error) {
-	return entities.User{Name: "TestName1", Password: "TestPassword1"}, errors.New("Bad Request")
+	return entities.User{ID: 2, Email: "Test2@email.com", Password: "TestPassword2"}, errors.New("Bad Request")
 }
 func (mur mockFalseUserRepository) Create(newUser entities.User) (entities.User, error) {
-	return entities.User{Name: "TestName1", Password: "TestPassword1"}, errors.New("Bad Request")
+	return entities.User{ID: 2, Email: "Test2@email.com", Password: "TestPassword2"}, errors.New("Bad Request")
 }
 func (mur mockFalseUserRepository) Update(updateUser entities.User, userId int) (entities.User, error) {
-	return entities.User{Name: "TestName1", Password: "TestPassword1"}, errors.New("Bad Request")
+	return entities.User{Email: "Test2@email.com", Password: "TestPassword2"}, errors.New("Bad Request")
 }
 func (mur mockFalseUserRepository) Delete(userId int) (entities.User, error) {
-	return entities.User{Name: "TestName1", Password: "TestPassword1"}, errors.New("Bad Request")
+	return entities.User{Email: "Test2@email.com", Password: "TestPassword2"}, errors.New("Bad Request")
 }

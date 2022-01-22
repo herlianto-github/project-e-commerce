@@ -28,6 +28,11 @@ func CreateTokenAuth(id uint) (string, error) {
 	claims["authorized"] = true
 	claims["userid"] = id
 	claims["exp"] = time.Now().Add(time.Hour * 1).Unix()
+	if id == 1 {
+		claims["admin"] = true
+	} else {
+		claims["admin"] = false
+	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(constants.JWT_SECRET_KEY))
 }
