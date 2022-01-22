@@ -283,20 +283,16 @@ func (mur mockUserRepository) Delete(userId int) (entities.User, error) {
 
 type mockCartRepository struct{}
 
-func (mcr mockCartRepository) Gets() ([]entities.Cart, error) {
-	return []entities.Cart{}, nil
+func (mcr mockCartRepository) Get(cartID uint) ([]entities.Detail_cart, error) {
+	return []entities.Detail_cart{}, nil
 }
 
 func (mcr mockCartRepository) Insert(newCart entities.Cart) (entities.Cart, error) {
 	return entities.Cart{Total_Product: 0, Total_price: 0}, nil
 }
 
-func (mcr mockCartRepository) InsertProduct(cartID uint, newItem entities.Detail_cart) (entities.Detail_cart, error) {
+func (mcr mockCartRepository) InsertProduct(newItem entities.Detail_cart) (entities.Detail_cart, error) {
 	return entities.Detail_cart{ID: 1, CartID: 1, ProductID: 1, Qty: 1}, nil
-}
-
-func (mcr mockCartRepository) UpdateProduct(cartID, productID uint, qty int) (entities.Detail_cart, error) {
-	return entities.Detail_cart{ID: 1, CartID: 1, ProductID: 1, Qty: 2}, nil
 }
 
 func (mcr mockCartRepository) DeleteProduct(cartID, productID uint) (entities.Detail_cart, error) {
@@ -305,20 +301,16 @@ func (mcr mockCartRepository) DeleteProduct(cartID, productID uint) (entities.De
 
 type mockFalseCartRepository struct{}
 
-func (mcr mockFalseCartRepository) Gets() ([]entities.Cart, error) {
-	return []entities.Cart{}, errors.New("Bad Request")
+func (mcr mockFalseCartRepository) Get(cartID uint) ([]entities.Detail_cart, error) {
+	return []entities.Detail_cart{}, errors.New("Bad Request")
 }
 
 func (mcr mockFalseCartRepository) Insert(newCart entities.Cart) (entities.Cart, error) {
 	return entities.Cart{Total_Product: 0, Total_price: 0}, errors.New("Bad Request")
 }
 
-func (mcr mockFalseCartRepository) InsertProduct(cartID uint, newItem entities.Detail_cart) (entities.Detail_cart, error) {
+func (mcr mockFalseCartRepository) InsertProduct(newItem entities.Detail_cart) (entities.Detail_cart, error) {
 	return entities.Detail_cart{ID: 1, CartID: 1, ProductID: 1, Qty: 1}, errors.New("Bad Request")
-}
-
-func (mcr mockFalseCartRepository) UpdateProduct(cartID, productID uint, qty int) (entities.Detail_cart, error) {
-	return entities.Detail_cart{ID: 1, CartID: 1, ProductID: 1, Qty: 2}, errors.New("Bad Request")
 }
 
 func (mcr mockFalseCartRepository) DeleteProduct(cartID, productID uint) (entities.Detail_cart, error) {

@@ -18,6 +18,29 @@ func NewCartsControllers(crrep carts.CartInterface) *CartsController {
 	return &CartsController{Repo: crrep}
 }
 
+func (crrep CartsController) Gets() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		carts := GetsDetail_CartRequestFormat{}
+		if err := c.Bind(&carts); err != nil {
+			return c.JSON(http.StatusBadRequest, common.NewBadRequestResponse())
+		}
+
+		uid := c.Get("user").(*jwt.Token)
+		claims := uid.Claims.(jwt.MapClaims)
+		cartID := int(claims["userid"].(float64))
+
+		if res, err := crrep.Repo.Get(uint(cartID)); err != nil {
+			return c.JSON(http.StatusInternalServerError, common.NewInternalServerErrorResponse())
+		} else {
+			return c.JSON(http.StatusOK, map[string]interface{}{
+				"code":    200,
+				"message": "Successful Operation",
+				"data":    res,
+			})
+		}
+	}
+}
+
 func (crrep CartsController) PutItemIntoDetail_CartCtrl() echo.HandlerFunc {
 	return func(c echo.Context) error {
 
@@ -32,17 +55,18 @@ func (crrep CartsController) PutItemIntoDetail_CartCtrl() echo.HandlerFunc {
 		cartID := int(claims["userid"].(float64))
 
 		newItem := entities.Detail_cart{
-			CartID:    uint(cartID),
-			ProductID: uint(newItemReq.ProductID),
-			Qty:       newItemReq.Qty,
-		}
-		if res, err := crrep.Repo.InsertProduct(uint(cartID), newItem); err != nil || res.ID == 0 {
-			if res2, err2 := crrep.Repo.UpdateProduct(newItem.CartID, newItem.ProductID, newItemReq.Qty); err2 != nil || res2.ID == 0 {
-				return c.JSON(http.StatusInternalServerError, common.NewInternalServerErrorResponse())
-			}
+			CartID:     uint(cartID),
+			ProductID:  uint(newItemReq.ProductID),
+			Qty:        newItemReq.Qty,
+			Price:      newItemReq.ProductPrice,
+			TotalPrice: newItemReq.ProductPrice * newItemReq.Qty,
 		}
 
-		return c.JSON(http.StatusOK, common.NewSuccessOperationResponse())
+		if res, err := crrep.Repo.InsertProduct(newItem); err != nil || res.ID == 0 {
+			return c.JSON(http.StatusInternalServerError, common.NewInternalServerErrorResponse())
+		} else {
+			return c.JSON(http.StatusOK, common.NewSuccessOperationResponse())
+		}
 
 	}
 }

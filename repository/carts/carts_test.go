@@ -29,7 +29,7 @@ func TestCartRepo(t *testing.T) {
 		assert.Equal(t, 1, int(res.ID))
 	})
 	t.Run("select * from cart", func(t *testing.T) {
-		res, err := cartRepo.Gets()
+		res, err := cartRepo.Get(1)
 		assert.Nil(t, err)
 		assert.Equal(t, res, res)
 	})
@@ -38,16 +38,11 @@ func TestCartRepo(t *testing.T) {
 		mockDetailCart.ProductID = 1
 		mockDetailCart.Qty = 1
 
-		res, err := cartRepo.InsertProduct(1, mockDetailCart)
+		res, err := cartRepo.InsertProduct(mockDetailCart)
 		assert.Nil(t, err)
 		assert.Equal(t, res, res)
 	})
 
-	t.Run("update qty some product into detail_cart", func(t *testing.T) {
-		res, err := cartRepo.UpdateProduct(1, 1, 1)
-		assert.Nil(t, err)
-		assert.Equal(t, res, res)
-	})
 	t.Run("delete some product into detail_cart", func(t *testing.T) {
 		res, err := cartRepo.DeleteProduct(1, 1)
 		assert.Nil(t, err)

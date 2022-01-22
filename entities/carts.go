@@ -11,7 +11,7 @@ type Cart struct {
 	ID             uint
 	Total_Product  int
 	Total_price    int
-	User           User
+	User_id        uint
 	Detail_cart_ID []Detail_cart
 }
 
@@ -19,7 +19,7 @@ type Detail_cart struct {
 	gorm.Model
 	ID           uint
 	CartID       uint `gorm:"not unique"`
-	ProductID    uint `gorm:"unique"`
+	ProductID    uint `gorm:"not unique"`
 	Qty          int
 	Price        int
 	TotalPrice   int

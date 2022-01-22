@@ -29,26 +29,25 @@ func (ur *UserRepository) Get(userId int) (entities.User, error) {
 
 func (ur *UserRepository) Create(newUser entities.User) (entities.User, error) {
 
-	cartData := entities.Cart{
-		Total_Product: 0,
-		Total_price:   0,
-	}
-	ur.db.Save(&cartData)
-	ur.db.Find(&newUser)
-	newUser.CartID = cartData.ID
 	if err := ur.db.Save(&newUser).Error; err != nil {
 		return newUser, nil
 	}
-
 	return newUser, nil
 }
 
-func (ur *UserRepository) Login(name, password string) (entities.User, error) {
+func (ur *UserRepository) Login(email, password string) (entities.User, error) {
 	var user entities.User
 	getPass := entities.User{}
-	ur.db.Select("password").Where("Name = ?", name).Find(&getPass)
+	ur.db.Select("password").Where("Email = ?", email).Find(&getPass)
 	bcrypt.CompareHashAndPassword([]byte(getPass.Password), []byte(password))
-	ur.db.Where("Name = ?", name).Find(&user)
+	ur.db.Where("Email = ?", email).Find(&user)
+
+	newCart := entities.Cart{
+		User_id:       user.ID,
+		Total_Product: 0,
+		Total_price:   0,
+	}
+	ur.db.Save(&newCart)
 
 	return user, nil
 }

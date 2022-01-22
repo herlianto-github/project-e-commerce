@@ -39,10 +39,10 @@ func (uscon UsersController) Login() echo.HandlerFunc {
 		if err := c.Bind(&loginFormat); err != nil {
 			return c.JSON(http.StatusBadRequest, common.NewBadRequestResponse())
 		}
-		checkedUser, err := uscon.Repo.Login(loginFormat.Name, loginFormat.Password)
+		checkedUser, err := uscon.Repo.Login(loginFormat.Email, loginFormat.Password)
 
 		if err != nil || checkedUser.ID != 0 {
-			if loginFormat.Name != "" && loginFormat.Password != "" {
+			if loginFormat.Email != "" && loginFormat.Password != "" {
 				token, _ := CreateTokenAuth(checkedUser.ID)
 
 				return c.JSON(
@@ -70,16 +70,18 @@ func (uscon UsersController) PostUserCtrl() echo.HandlerFunc {
 
 		hash, _ := bcrypt.GenerateFromPassword([]byte(newUserReq.Password), 14)
 		newUser := entities.User{
-			Name:     newUserReq.Name,
+			Name:     newUserReq.Password,
+			Email:    newUserReq.Email,
 			Password: string(hash),
 		}
 
-		_, err := uscon.Repo.Create(newUser)
-		if err != nil {
+		if _, err := uscon.Repo.Create(newUser); err != nil {
 			return c.JSON(http.StatusInternalServerError, common.NewInternalServerErrorResponse())
+		} else {
+
+			return c.JSON(http.StatusOK, common.NewSuccessOperationResponse())
 		}
 
-		return c.JSON(http.StatusOK, common.NewSuccessOperationResponse())
 	}
 
 }
