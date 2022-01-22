@@ -30,9 +30,9 @@ func TestCartRepo(t *testing.T) {
 
 	userRepo := users.NewUsersRepo(db)
 	var newUser entities.User
-	newUser.Name = "TestName1"
-	newUser.Email = "Test1@email.com"
-	newUser.Password = "TestPassword1"
+	newUser.Name = "TestNameCart1"
+	newUser.Email = "TestCart1@email.com"
+	newUser.Password = "TestPassword1Cart"
 	userRepo.Create(newUser)
 
 	cartRepo := NewCartsRepo(db)
