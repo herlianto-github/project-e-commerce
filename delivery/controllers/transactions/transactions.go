@@ -9,7 +9,6 @@ import (
 	"strconv"
 
 	"github.com/google/uuid"
-	"github.com/midtrans/midtrans-go"
 	"github.com/midtrans/midtrans-go/coreapi"
 
 	"github.com/golang-jwt/jwt"
@@ -97,37 +96,40 @@ func (trrep TransactionsController) PostProductsIntoTransactionCtrl() echo.Handl
 
 func (trrep TransactionsController) GetStatus() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		midtrans.ServerKey = "SB-Mid-server-WBQoXNegZ5veTRfQsX3WOGFq"
-		midtrans.ClientKey = "SB-Mid-client-lbfJ_9e_8nsyvWWS"
-		midtrans.Environment = midtrans.Sandbox
+		var notificationPayload map[string]interface{}
 
-		crc.New(midtrans.ServerKey, midtrans.Environment)
+		if err := c.Bind(&notificationPayload); err != nil {
+			return c.JSON(http.StatusBadRequest, common.NewBadRequestResponse())
+		}
 
-		uid := c.Get("user").(*jwt.Token)
-		claims := uid.Claims.(jwt.MapClaims)
-		userID := int(claims["userid"].(float64))
-		length := 0
-		if res, err := trrep.Repo.Gets(uint(userID)); err != nil {
+		orderID, exists := notificationPayload["order-id"].(string)
+		if !exists {
+			fmt.Println("not found")
+		}
+
+		fmt.Println("notification", notificationPayload)
+		fmt.Println(orderID)
+
+		tranStatusResp, e := crc.CheckTransaction(orderID)
+		if e != nil {
 			return c.JSON(http.StatusInternalServerError, common.NewInternalServerErrorResponse())
 		} else {
-			fmt.Println("ada berapa", len(res))
-			for length != len(res) {
+			if tranStatusResp != nil {
 
-				res1, err1 := crc.CheckTransaction(res[length].Invoice)
-				if err1 != nil {
-					fmt.Println("gagal", err1)
+				if res, err := trrep.Repo.Update(tranStatusResp.TransactionStatus, 1); err != nil {
+					return c.JSON(http.StatusInternalServerError, common.NewInternalServerErrorResponse())
+				} else {
+					return c.JSON(http.StatusOK, map[string]interface{}{
+						"code":    200,
+						"message": "Successful Operation",
+						"data":    res,
+					})
 				}
-				fmt.Println("response", res1)
 
-				length++
 			}
-
-			return c.JSON(http.StatusOK, map[string]interface{}{
-				"code":    200,
-				"message": "Successful Operation",
-				"data":    res,
-			})
 		}
+
+		return c.JSON(http.StatusOK, common.NewSuccessOperationResponse())
 
 	}
 }

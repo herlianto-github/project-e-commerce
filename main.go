@@ -17,9 +17,19 @@ import (
 	"project-e-commerces/utils"
 
 	"github.com/labstack/echo/v4"
+	"github.com/midtrans/midtrans-go"
+	"github.com/midtrans/midtrans-go/coreapi"
 )
 
+var c coreapi.Client
+
 func main() {
+
+	midtrans.ServerKey = "SB-Mid-server-WBQoXNegZ5veTRfQsX3WOGFq"
+	midtrans.ClientKey = "SB-Mid-client-lbfJ_9e_8nsyvWWS"
+	midtrans.Environment = midtrans.Sandbox
+
+	c.New(midtrans.ServerKey, midtrans.Environment)
 
 	config := configs.GetConfig()
 	db := utils.InitDB(config)

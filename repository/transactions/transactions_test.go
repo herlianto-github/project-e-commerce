@@ -41,7 +41,7 @@ func TestTransactionRepo(t *testing.T) {
 	t.Run("update 1 from transaction", func(t *testing.T) {
 		var mockUpdateTransaction entities.Transaction
 		mockUpdateTransaction.Status = "SETTLEMENT"
-		res, err := transactionRepo.Update(mockUpdateTransaction, 1)
+		res, err := transactionRepo.Update(mockUpdateTransaction.Status, 1)
 		assert.Nil(t, err)
 		assert.Equal(t, res.ID, uint(1))
 	})

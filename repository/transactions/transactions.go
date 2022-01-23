@@ -32,10 +32,10 @@ func (tr *TransactionsRepository) InsertDT(newDetailTransactions entities.Detail
 	return newDetailTransactions, nil
 }
 
-func (tr *TransactionsRepository) Update(updateTransactions entities.Transaction, trID uint) (entities.Transaction, error) {
+func (tr *TransactionsRepository) Update(updateStatus string, trID uint) (entities.Transaction, error) {
 	transaction := entities.Transaction{}
 	tr.db.Where("id=?", trID).Find(&transaction)
-	transaction.Status = updateTransactions.Status
+	transaction.Status = updateStatus
 
 	tr.db.Save(&transaction)
 	return transaction, nil
@@ -49,10 +49,9 @@ func (tr *TransactionsRepository) Delete(trID, userID uint) (entities.Transactio
 }
 
 func (tr *TransactionsRepository) GetsPaymentUrl(userID uint, totalPrice, totalQty int, invoiceID string) (string, error) {
-	midtrans.ServerKey = "SB-Mid-server-WBQoXNegZ5veTRfQsX3WOGFq"
-	midtrans.ClientKey = "SB-Mid-client-lbfJ_9e_8nsyvWWS"
-	midtrans.Environment = midtrans.Sandbox
-
+	// midtrans.ServerKey = "SB-Mid-server-WBQoXNegZ5veTRfQsX3WOGFq"
+	// midtrans.ClientKey = "SB-Mid-client-lbfJ_9e_8nsyvWWS"
+	// midtrans.Environment = midtrans.Sandbox
 	req := &snap.Request{
 		TransactionDetails: midtrans.TransactionDetails{
 			OrderID:  "INV-" + invoiceID + "/c/" + strconv.Itoa(int(userID)),
