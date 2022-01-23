@@ -98,6 +98,6 @@ jobs:
         script: |
           cd project2
           cd project-e-commerce
-          git pull origin development
+          git pull origin main
           docker-compose down --rmi all
           docker-compose up --build -d
