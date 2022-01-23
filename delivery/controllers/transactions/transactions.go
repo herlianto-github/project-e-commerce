@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/google/uuid"
+	"github.com/midtrans/midtrans-go"
 	"github.com/midtrans/midtrans-go/coreapi"
 
 	"github.com/golang-jwt/jwt"
@@ -96,6 +97,13 @@ func (trrep TransactionsController) PostProductsIntoTransactionCtrl() echo.Handl
 
 func (trrep TransactionsController) GetStatus() echo.HandlerFunc {
 	return func(c echo.Context) error {
+
+		midtrans.ServerKey = "SB-Mid-server-WBQoXNegZ5veTRfQsX3WOGFq"
+		midtrans.ClientKey = "SB-Mid-client-lbfJ_9e_8nsyvWWS"
+		midtrans.Environment = midtrans.Sandbox
+
+		crc.New(midtrans.ServerKey, midtrans.Environment)
+
 		var notificationPayload map[string]interface{}
 
 		if err := c.Bind(&notificationPayload); err != nil {
