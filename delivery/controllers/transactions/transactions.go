@@ -8,9 +8,15 @@ import (
 	"project-e-commerces/repository/transactions"
 	"strconv"
 
+	"github.com/google/uuid"
+	"github.com/midtrans/midtrans-go"
+	"github.com/midtrans/midtrans-go/coreapi"
+
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 )
+
+var crc coreapi.Client
 
 type TransactionsController struct {
 	Repo transactions.TransactionInterface
@@ -20,150 +26,108 @@ func NewTransactionsControllers(tsrep transactions.TransactionInterface) *Transa
 	return &TransactionsController{Repo: tsrep}
 }
 
-func (trrep TransactionsController) PostProductIntoTransactionCtrl() echo.HandlerFunc {
+func (trrep TransactionsController) PostProductsIntoTransactionCtrl() echo.HandlerFunc {
 	return func(c echo.Context) error {
 
 		uid := c.Get("user").(*jwt.Token)
 		claims := uid.Claims.(jwt.MapClaims)
 		userID := int(claims["userid"].(float64))
 
-		newPTransaction := ProductDetail_TransactionReqeuestFormat{}
+		newPTransaction := Detail_TransactionReqeuestFormat{}
 		if err := c.Bind(&newPTransaction); err != nil {
 			return c.JSON(http.StatusBadRequest, common.NewBadRequestResponse())
 		}
+		totalprice := 0
+		totalQty := 0
+		for i := 0; i < len(newPTransaction.Products); i++ {
+			totalprice += newPTransaction.Products[i].Product_price
+			totalQty += newPTransaction.Products[i].Product_qty
 
-		paymentMidtrans := entities.Transaction{
-			ID:          uint(userID),
-			Total_price: newPTransaction.Product_price,
 		}
-
-		if res, err := trrep.Repo.GetPaymentURL(paymentMidtrans, uint(userID)); err != nil {
-
+		invoiceID := uuid.New().String()
+		if res, err := trrep.Repo.GetsPaymentUrl(uint(userID), totalprice, totalQty, invoiceID); err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-				"message": res,
+				"code":    500,
+				"message": "Internal Server Error",
+				"data":    err,
 			})
 		} else {
 			newTransaction := entities.Transaction{
 				User_id:     uint(userID),
-				Total_price: newPTransaction.Product_price,
-				Total_qty:   newPTransaction.Product_qty,
+				Total_price: totalprice,
+				Total_qty:   totalQty,
 				Status:      "PENDING",
 				Url:         res,
+				Invoice:     invoiceID,
+				OrderID:     "INV-" + invoiceID + "/c/" + strconv.Itoa(int(userID)),
 			}
 
-			if res, err := trrep.Repo.InsertT(newTransaction); err != nil || res.ID == 0 {
-
-				newDetailTransaction := entities.Detail_transaction{
-					Transaction_id: res.ID,
-					Product_id:     newPTransaction.ProductID,
-					Product_qty:    newPTransaction.Product_qty,
-					Price:          newPTransaction.Product_price,
-				}
-
-				if res2, _ := trrep.Repo.InsertDT(newDetailTransaction); err != nil || res2.ID == 0 {
-					return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-						"code":    500,
-						"message": "Internal Server Error",
-					})
-
-				}
-
-				return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-					"code":    500,
-					"message": "Internal Server Error",
-				})
-
+			if res, _ := trrep.Repo.InsertT(newTransaction); err != nil {
+				return c.JSON(http.StatusInternalServerError, common.NewInternalServerErrorResponse())
 			} else {
+				i := 0
+				for i != len(newPTransaction.Products) {
+					newDetailTransaction := entities.Detail_transaction{
+						Transaction_id: res.ID,
+						Product_id:     uint(newPTransaction.Products[i].ProductID),
+						Product_qty:    newPTransaction.Products[i].Product_qty,
+						Price:          newPTransaction.Products[i].Product_price,
+					}
+					if res2, err := trrep.Repo.InsertDT(newDetailTransaction); err != nil || res2.ID == 0 {
+						return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+							"code":    500,
+							"message": "Internal Server Error",
+							"data":    err,
+						})
+					}
+					i++
+				}
+
 				return c.JSON(http.StatusOK, map[string]interface{}{
 					"code":    200,
 					"message": "Successful Operation",
-					"data":    res,
+					"data":    res.Url,
 				})
 			}
+
 		}
 
 	}
 }
-func (trrep TransactionsController) PostCartIntoTransactionCtrl() echo.HandlerFunc {
+
+func (trrep TransactionsController) GetStatus() echo.HandlerFunc {
 	return func(c echo.Context) error {
+		midtrans.ServerKey = "SB-Mid-server-WBQoXNegZ5veTRfQsX3WOGFq"
+		midtrans.ClientKey = "SB-Mid-client-lbfJ_9e_8nsyvWWS"
+		midtrans.Environment = midtrans.Sandbox
 
-		cartID, err := strconv.Atoi(c.Param("id"))
-		if err != nil {
-			return c.JSON(http.StatusNotFound, common.NewNotFoundResponse())
+		crc.New(midtrans.ServerKey, midtrans.Environment)
+
+		uid := c.Get("user").(*jwt.Token)
+		claims := uid.Claims.(jwt.MapClaims)
+		userID := int(claims["userid"].(float64))
+		length := 0
+		if res, err := trrep.Repo.Gets(uint(userID)); err != nil {
+			return c.JSON(http.StatusInternalServerError, common.NewInternalServerErrorResponse())
+		} else {
+			fmt.Println("ada berapa", len(res))
+			for length != len(res) {
+
+				res1, err1 := crc.CheckTransaction(res[length].Invoice)
+				if err1 != nil {
+					fmt.Println("gagal", err1)
+				}
+				fmt.Println("response", res1)
+
+				length++
+			}
+
+			return c.JSON(http.StatusOK, map[string]interface{}{
+				"code":    200,
+				"message": "Successful Operation",
+				"data":    res,
+			})
 		}
 
-		newCTransaction := CartDetail_TransactionReqeuestFormat{}
-
-		if err := c.Bind(&newCTransaction); err != nil {
-			fmt.Println("anu", err)
-			return c.JSON(http.StatusBadRequest, common.NewBadRequestResponse())
-		}
-		fmt.Println("cartID", cartID)
-		fmt.Println("productlist", newCTransaction)
-		Totalprice := 0
-		TotalQty := 0
-		for i := 0; i < len(newCTransaction.Products); i++ {
-			Totalprice += newCTransaction.Products[i].Product_price
-			TotalQty += newCTransaction.Products[i].Product_qty
-		}
-
-		fmt.Println("totalprice", Totalprice)
-		fmt.Println("totalqty", TotalQty)
-
-		// paymentMidtrans := entities.Transaction{
-		// 	ID:          uint(userID),
-		// 	Total_price: newPTransaction.Product_price,
-		// }
-
-		// if res, err := trrep.Repo.GetPaymentURL(paymentMidtrans, uint(userID)); err != nil {
-
-		// 	return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-		// 		"message": res,
-		// 	})
-		// } else {
-		// 	newTransaction := entities.Transaction{
-		// 		User_id:     uint(userID),
-		// 		Total_price: newPTransaction.Product_price,
-		// 		Total_qty:   newPTransaction.Product_qty,
-		// 		Status:      "PENDING",
-		// 		Url:         res,
-		// 	}
-
-		// 	if res, err := trrep.Repo.InsertT(newTransaction); err != nil || res.ID == 0 {
-
-		// 		newDetailTransaction := entities.Detail_transaction{
-		// 			Transaction_id: res.ID,
-		// 			Product_id:     newPTransaction.ProductID,
-		// 			Product_qty:    newPTransaction.Product_qty,
-		// 			Price:          newPTransaction.Product_price,
-		// 		}
-
-		// 		if res2, _ := trrep.Repo.InsertDT(newDetailTransaction); err != nil || res2.ID == 0 {
-		// 			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-		// 				"code":    500,
-		// 				"message": "Internal Server Error",
-		// 			})
-
-		// 		}
-
-		// 		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-		// 			"code":    500,
-		// 			"message": "Internal Server Error",
-		// 		})
-
-		// 	} else {
-		// 		return c.JSON(http.StatusOK, map[string]interface{}{
-		// 			"code":    200,
-		// 			"message": "Successful Operation",
-		// 			"data":    res,
-		// 		})
-		// 	}
-		// }
-
-		return c.JSON(http.StatusOK, map[string]interface{}{
-			"code":    200,
-			"message": "Successful Operation",
-			// "data":    res,
-		})
 	}
 }

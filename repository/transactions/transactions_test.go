@@ -34,14 +34,9 @@ func TestTransactionRepo(t *testing.T) {
 		assert.Equal(t, 1, int(res.ID))
 	})
 	t.Run("select * from transaction", func(t *testing.T) {
-		res, err := transactionRepo.Gets()
+		res, err := transactionRepo.Gets(1)
 		assert.Nil(t, err)
 		assert.Equal(t, res, res)
-	})
-	t.Run("select 1 from transaction", func(t *testing.T) {
-		res, err := transactionRepo.Get(1)
-		assert.Nil(t, err)
-		assert.Equal(t, res.ID, uint(1))
 	})
 	t.Run("update 1 from transaction", func(t *testing.T) {
 		var mockUpdateTransaction entities.Transaction
