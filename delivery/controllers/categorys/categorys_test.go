@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"project-e-commerces/entities"
@@ -130,8 +129,6 @@ func TestCreateCategory(t *testing.T) {
 
 		data := response.Data
 
-		fmt.Println(response)
-
 		name := data[0].Name
 
 		assert.Equal(t, "Category Alpha", name)
@@ -157,8 +154,6 @@ func TestCreateCategory(t *testing.T) {
 		response := GetCategoryResponseFormat{}
 
 		json.Unmarshal([]byte(res.Body.Bytes()), &response)
-
-		fmt.Println(response)
 
 		assert.Equal(t, "can't create category", response.Message)
 	})
@@ -188,8 +183,6 @@ func TestUpdateCategory(t *testing.T) {
 		json.Unmarshal([]byte(res.Body.Bytes()), &response)
 
 		data := response.Data
-
-		fmt.Println(response)
 
 		name := data[0].Name
 

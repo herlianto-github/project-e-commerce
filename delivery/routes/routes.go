@@ -35,6 +35,9 @@ func RegisterPath(e *echo.Echo, uctrl *users.UsersController, crCtrl *carts.Cart
 	e.GET("/carts", crCtrl.Gets(), middleware.JWT([]byte(constants.JWT_SECRET_KEY)))
 	e.DELETE("/carts/delitem", crCtrl.DeleteItemFromDetail_CartCtrl(), middleware.JWT([]byte(constants.JWT_SECRET_KEY)))
 
+	// ---------------------------------------------------------------------
+	// CRUD Transactions
+	// ---------------------------------------------------------------------
 	e.POST("/transactions/live", tsCtrl.PostProductIntoTransactionCtrl(), middleware.JWT([]byte(constants.JWT_SECRET_KEY)))
 	e.POST("/transactions/cart", tsCtrl.PostCartIntoTransactionCtrl(), middleware.JWT([]byte(constants.JWT_SECRET_KEY)))
 
