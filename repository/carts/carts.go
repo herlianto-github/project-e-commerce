@@ -30,6 +30,7 @@ func (cr *CartsRepository) InsertProduct(newProduct entities.Detail_cart) (entit
 	cr.db.Where("cart_id=? AND product_id=?", newProduct.CartID, newProduct.ProductID).Find(&temp)
 	if temp.ID != 0 {
 		temp.Qty += newProduct.Qty
+		temp.TotalPrice += newProduct.TotalPrice
 		cr.db.Save(&temp)
 		return temp, nil
 	}
