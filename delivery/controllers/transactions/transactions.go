@@ -8,6 +8,7 @@ import (
 	"project-e-commerces/repository/transactions"
 	"strconv"
 
+	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 )
 
@@ -22,10 +23,9 @@ func NewTransactionsControllers(tsrep transactions.TransactionInterface) *Transa
 func (trrep TransactionsController) PostProductIntoTransactionCtrl() echo.HandlerFunc {
 	return func(c echo.Context) error {
 
-		userID, err := strconv.Atoi(c.Param("id"))
-		if err != nil {
-			return c.JSON(http.StatusNotFound, common.NewNotFoundResponse())
-		}
+		uid := c.Get("user").(*jwt.Token)
+		claims := uid.Claims.(jwt.MapClaims)
+		userID := int(claims["userid"].(float64))
 
 		newPTransaction := ProductDetail_TransactionReqeuestFormat{}
 		if err := c.Bind(&newPTransaction); err != nil {
