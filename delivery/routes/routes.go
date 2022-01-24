@@ -10,6 +10,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+
+	mw "project-e-commerces/delivery/middlewares"
 )
 
 func RegisterPath(e *echo.Echo, uctrl *users.UsersController, crCtrl *carts.CartsController, tsCtrl *transactions.TransactionsController, cc *categorys.CategoryController, pc *products.ProductController) {
@@ -45,15 +47,17 @@ func RegisterPath(e *echo.Echo, uctrl *users.UsersController, crCtrl *carts.Cart
 
 	e.GET("/categorys", cc.GetAllCategory)
 	e.GET("/categorys/:id", cc.GetCategoryByID)
-	e.POST("/categorys", cc.CreateCategory)
-	e.PUT("/categorys/:id", cc.UpdateCategory)
-	e.DELETE("/categorys/:id", cc.DeleteCategory)
+	e.POST("/categorys", cc.CreateCategory, middleware.JWT([]byte(constants.JWT_SECRET_KEY)), mw.NewAuth().IsAdmin)
+	e.PUT("/categorys/:id", cc.UpdateCategory, middleware.JWT([]byte(constants.JWT_SECRET_KEY)), mw.NewAuth().IsAdmin)
+	e.DELETE("/categorys/:id", cc.DeleteCategory, middleware.JWT([]byte(constants.JWT_SECRET_KEY)), mw.NewAuth().IsAdmin)
 
 	e.GET("/products", pc.GetAllProduct)
 	e.GET("/products/:id", pc.GetProductByID)
-	e.GET("/products/stocks/:id", pc.GetHistoryStockProduct)
-	e.POST("/products", pc.CreateProduct)
-	e.POST("/products/stocks/:id", pc.UpdateStockProduct)
-	e.PUT("/products/:id", pc.UpdateProduct)
-	e.DELETE("/products/:id", pc.DeleteProduct)
+	e.GET("/products/stocks/:id", pc.GetHistoryStockProduct, middleware.JWT([]byte(constants.JWT_SECRET_KEY)), mw.NewAuth().IsAdmin)
+	e.GET("/products/export", pc.ExportPDF, middleware.JWT([]byte(constants.JWT_SECRET_KEY)), mw.NewAuth().IsAdmin)
+	e.POST("/products", pc.CreateProduct, middleware.JWT([]byte(constants.JWT_SECRET_KEY)), mw.NewAuth().IsAdmin)
+	e.POST("/products/stocks/:id", pc.UpdateStockProduct, middleware.JWT([]byte(constants.JWT_SECRET_KEY)), mw.NewAuth().IsAdmin)
+	e.PUT("/products/:id", pc.UpdateProduct, middleware.JWT([]byte(constants.JWT_SECRET_KEY)), mw.NewAuth().IsAdmin)
+	e.DELETE("/products/:id", pc.DeleteProduct, middleware.JWT([]byte(constants.JWT_SECRET_KEY)), mw.NewAuth().IsAdmin)
+
 }

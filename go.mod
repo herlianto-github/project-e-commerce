@@ -44,6 +44,7 @@ require (
 )
 
 require (
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/johnfercher/maroto v0.34.0
 	github.com/midtrans/midtrans-go v1.2.2
