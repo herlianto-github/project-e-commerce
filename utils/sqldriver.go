@@ -38,9 +38,9 @@ func InitialMigration(db *gorm.DB) {
 	db.Migrator().DropTable(&entities.Detail_cart{})
 	db.Migrator().DropTable(&entities.Cart{})
 	db.Migrator().DropTable(&entities.User{})
-	db.Migrator().DropTable(&entities.Stock{})
-	db.Migrator().DropTable(&entities.Product{})
-	db.Migrator().DropTable(&entities.Category{})
+	// db.Migrator().DropTable(&entities.Stock{})
+	// db.Migrator().DropTable(&entities.Product{})
+	// db.Migrator().DropTable(&entities.Category{})
 
 	db.AutoMigrate(entities.Category{})
 	db.AutoMigrate(entities.Product{})
