@@ -33,7 +33,7 @@ func TestGetAllCategory(t *testing.T) {
 		name := data[0].Name
 
 		assert.Equal(t, name, "Category Alpha")
-		assert.Equal(t, "success get all category", response.Message)
+		assert.Equal(t, "successful operation", response.Message)
 	})
 
 	t.Run("2-error-case", func(t *testing.T) {
@@ -51,7 +51,7 @@ func TestGetAllCategory(t *testing.T) {
 		json.Unmarshal([]byte(res.Body.Bytes()), &response)
 
 		assert.Equal(t, []entities.Category(nil), response.Data)
-		assert.Equal(t, "no categorys data found", response.Message)
+		assert.Equal(t, "Internal Server Error", response.Message)
 	})
 }
 
@@ -70,15 +70,29 @@ func TestGetCategoryByID(t *testing.T) {
 		categoryController.GetCategoryByID(context)
 
 		response := GetCategoryResponseFormat{}
+		var response1 interface{}
 
 		json.Unmarshal([]byte(res.Body.Bytes()), &response)
+		json.Unmarshal([]byte(res.Body.Bytes()), &response1)
 
-		data := response.Data[0]
+		// fmt.Println(response1)
 
-		name := data.Name
+		temp := response1.(map[string]interface{})
+
+		data := temp["data"].(map[string]interface{})
+
+		name := data["Name"]
+
+		// categoryData := data[0].(map[string]interface{})
+
+		// fmt.Println(categoryData["Name"])
+
+		// data := response.Data[0]
+
+		// name := data.Name
 
 		assert.Equal(t, name, "Category Alpha")
-		assert.Equal(t, "success get category", response.Message)
+		assert.Equal(t, "successful operation", response.Message)
 	})
 
 	t.Run("error-case", func(t *testing.T) {
@@ -101,11 +115,39 @@ func TestGetCategoryByID(t *testing.T) {
 		json.Unmarshal([]byte(res.Body.Bytes()), &response)
 
 		assert.Equal(t, []entities.Category([]entities.Category(nil)), response.Data)
-		assert.Equal(t, "category not found", response.Message)
+		assert.Equal(t, "Not Found", response.Message)
 	})
 }
 
 func TestCreateCategory(t *testing.T) {
+	// e := echo.New()
+	// jwtToken := ""
+	// t.Run("login", func(t *testing.T) {
+	// 	reqBody, _ := json.Marshal(map[string]string{
+	// 		"email":    "mimin@mail.com",
+	// 		"password": "mimin123",
+	// 	})
+
+	// 	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer(reqBody))
+	// 	res := httptest.NewRecorder()
+
+	// 	req.Header.Set("Content-Type", "application/json")
+	// 	context := e.NewContext(req, res)
+	// 	context.SetPath("/users/login")
+	// 	context.Request().Header.Set(echo.HeaderAuthorization, fmt.Sprint("Bearer", jwtToken))
+
+	// 	userCon := users.NewUserController(mockUserRepository{})
+	// 	userCon.Login(context)
+
+	// 	responses := users.LoginResponseFormat{}
+	// 	json.Unmarshal([]byte(res.Body.Bytes()), &responses)
+
+	// 	jwtToken = responses.Token
+	// 	assert.Equal(t, "Successful Operation", responses.Message)
+	// 	assert.Equal(t, 200, res.Code)
+
+	// })
+
 	t.Run("success-case", func(t *testing.T) {
 		e := echo.New()
 
@@ -119,20 +161,30 @@ func TestCreateCategory(t *testing.T) {
 		req.Header.Set("Content-Type", "application/json")
 		context := e.NewContext(req, res)
 		context.SetPath("/categorys")
+		// context.Request().Header.Set(echo.HeaderAuthorization, fmt.Sprint("Bearer", jwtToken))
 
 		categoryController := NewCategoryControllers(mockCategoryRepository{})
 		categoryController.CreateCategory(context)
 
 		response := GetCategoryResponseFormat{}
 
+		var response1 interface{}
+
 		json.Unmarshal([]byte(res.Body.Bytes()), &response)
+		json.Unmarshal([]byte(res.Body.Bytes()), &response1)
 
-		data := response.Data
+		// fmt.Println(response1)
 
-		name := data[0].Name
+		temp := response1.(map[string]interface{})
 
-		assert.Equal(t, "Category Alpha", name)
-		assert.Equal(t, "success create category", response.Message)
+		message := temp["message"].(string)
+
+		// data := response.Data
+
+		// name := data[0].Name
+
+		// assert.Equal(t, "Category Alpha", name)
+		assert.Equal(t, "Successful Operation", message)
 	})
 
 	t.Run("error-case", func(t *testing.T) {
@@ -147,6 +199,7 @@ func TestCreateCategory(t *testing.T) {
 		req.Header.Set("Content-Type", "application/json")
 		context := e.NewContext(req, res)
 		context.SetPath("/categorys")
+		// context.Request().Header.Set(echo.HeaderAuthorization, fmt.Sprint("Bearer", jwtToken))
 
 		categoryController := NewCategoryControllers(mockFalseCategoryRepository{})
 		categoryController.CreateCategory(context)
@@ -155,11 +208,39 @@ func TestCreateCategory(t *testing.T) {
 
 		json.Unmarshal([]byte(res.Body.Bytes()), &response)
 
-		assert.Equal(t, "can't create category", response.Message)
+		assert.Equal(t, "Internal Server Error", response.Message)
 	})
 }
 
 func TestUpdateCategory(t *testing.T) {
+	// e := echo.New()
+	// jwtToken := ""
+	// t.Run("login", func(t *testing.T) {
+	// 	reqBody, _ := json.Marshal(map[string]string{
+	// 		"email":    "mimin@mail.com",
+	// 		"password": "mimin123",
+	// 	})
+
+	// 	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer(reqBody))
+	// 	res := httptest.NewRecorder()
+
+	// 	req.Header.Set("Content-Type", "application/json")
+	// 	context := e.NewContext(req, res)
+	// 	context.SetPath("/users/login")
+	// 	// context.Request().Header.Set(echo.HeaderAuthorization, fmt.Sprint("Bearer", jwtToken))
+
+	// 	userCon := users.NewUserController(mockUserRepository{})
+	// 	userCon.Login(context)
+
+	// 	responses := users.LoginResponseFormat{}
+	// 	json.Unmarshal([]byte(res.Body.Bytes()), &responses)
+
+	// 	jwtToken = responses.Token
+	// 	assert.Equal(t, "Successful Operation", responses.Message)
+	// 	assert.Equal(t, 200, res.Code)
+
+	// })
+
 	t.Run("success-case", func(t *testing.T) {
 		e := echo.New()
 		requestBody, _ := json.Marshal(map[string]string{
@@ -174,20 +255,26 @@ func TestUpdateCategory(t *testing.T) {
 		context.SetPath("/categorys")
 		context.SetParamNames("id")
 		context.SetParamValues("1")
+		// context.Request().Header.Set(echo.HeaderAuthorization, fmt.Sprint("Bearer", jwtToken))
 
 		categoryController := NewCategoryControllers(mockCategoryRepository{})
 		categoryController.UpdateCategory(context)
 
 		response := GetCategoryResponseFormat{}
 
+		var response1 interface{}
+
 		json.Unmarshal([]byte(res.Body.Bytes()), &response)
+		json.Unmarshal([]byte(res.Body.Bytes()), &response1)
 
-		data := response.Data
+		// fmt.Println(response1)
 
-		name := data[0].Name
+		temp := response1.(map[string]interface{})
 
-		assert.Equal(t, "Category Alpha new", name)
-		assert.Equal(t, "success update category", response.Message)
+		message := temp["message"].(string)
+
+		// assert.Equal(t, "Category Alpha new", name)
+		assert.Equal(t, "Successful Operation", message)
 	})
 	t.Run("error-case", func(t *testing.T) {
 		e := echo.New()
@@ -203,6 +290,7 @@ func TestUpdateCategory(t *testing.T) {
 		context.SetPath("/categorys")
 		context.SetParamNames("id")
 		context.SetParamValues("1")
+		// context.Request().Header.Set(echo.HeaderAuthorization, fmt.Sprint("Bearer", jwtToken))
 
 		categoryController := NewCategoryControllers(mockFalseCategoryRepository{})
 		categoryController.UpdateCategory(context)
@@ -212,11 +300,39 @@ func TestUpdateCategory(t *testing.T) {
 		json.Unmarshal([]byte(res.Body.Bytes()), &response)
 
 		assert.Equal(t, []entities.Category([]entities.Category(nil)), response.Data)
-		assert.Equal(t, "can't update category", response.Message)
+		assert.Equal(t, "Internal Server Error", response.Message)
 	})
 }
 
 func TestDeleteCategory(t *testing.T) {
+	// e := echo.New()
+	// jwtToken := ""
+	// t.Run("login", func(t *testing.T) {
+	// 	reqBody, _ := json.Marshal(map[string]string{
+	// 		"email":    "mimin@mail.com",
+	// 		"password": "mimin123",
+	// 	})
+
+	// 	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer(reqBody))
+	// 	res := httptest.NewRecorder()
+
+	// 	req.Header.Set("Content-Type", "application/json")
+	// 	context := e.NewContext(req, res)
+	// 	context.SetPath("/users/login")
+	// 	// context.Request().Header.Set(echo.HeaderAuthorization, fmt.Sprint("Bearer", jwtToken))
+
+	// 	userCon := users.NewUserController(mockUserRepository{})
+	// 	userCon.Login(context)
+
+	// 	responses := users.LoginResponseFormat{}
+	// 	json.Unmarshal([]byte(res.Body.Bytes()), &responses)
+
+	// 	jwtToken = responses.Token
+	// 	assert.Equal(t, "Successful Operation", responses.Message)
+	// 	assert.Equal(t, 200, res.Code)
+
+	// })
+
 	t.Run("success-case", func(t *testing.T) {
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodDelete, "/", nil)
@@ -226,6 +342,7 @@ func TestDeleteCategory(t *testing.T) {
 		context.SetPath("/categorys")
 		context.SetParamNames("id")
 		context.SetParamValues("1")
+		// context.Request().Header.Set(echo.HeaderAuthorization, fmt.Sprint("Bearer", jwtToken))
 
 		categoryController := NewCategoryControllers(mockCategoryRepository{})
 		categoryController.DeleteCategory(context)
@@ -234,7 +351,7 @@ func TestDeleteCategory(t *testing.T) {
 
 		json.Unmarshal([]byte(res.Body.Bytes()), &response)
 
-		assert.Equal(t, "success delete category", response.Message)
+		assert.Equal(t, "Successful Operation", response.Message)
 	})
 
 	t.Run("error-case", func(t *testing.T) {
@@ -246,6 +363,7 @@ func TestDeleteCategory(t *testing.T) {
 		context.SetPath("/categorys")
 		context.SetParamNames("id")
 		context.SetParamValues("10")
+		// context.Request().Header.Set(echo.HeaderAuthorization, fmt.Sprint("Bearer", jwtToken))
 
 		categoryController := NewCategoryControllers(mockFalseCategoryRepository{})
 		categoryController.DeleteCategory(context)
@@ -254,7 +372,7 @@ func TestDeleteCategory(t *testing.T) {
 
 		json.Unmarshal([]byte(res.Body.Bytes()), &response)
 
-		assert.Equal(t, "can't delete category", response.Message)
+		assert.Equal(t, "Internal Server Error", response.Message)
 	})
 }
 
@@ -311,3 +429,26 @@ func (m mockFalseCategoryRepository) DeleteCategory(category_id int) (entities.C
 	return entities.Category{
 		ID: 0, Name: ""}, errors.New("error delete category")
 }
+
+// type mockUserRepository struct{}
+
+// func (mur mockUserRepository) Login(email string) (entities.User, error) {
+// 	return entities.User{ID: 1, Email: "mimin@mail.com", Password: "mimin123", Role: "admin"}, nil
+// }
+
+// func (mur mockUserRepository) Register(newUser entities.User) (entities.User, error) {
+// 	return entities.User{ID: 1, Email: "mimin@mail.com", Password: "mimin123", Role: "admin"}, nil
+// }
+
+// func (mur mockUserRepository) Get(user_id int) (entities.User, error) {
+// 	return entities.User{Name: "TestName1", Password: "TestPassword1"}, nil
+// }
+// func (mur mockUserRepository) Create(newUser entities.User) (entities.User, error) {
+// 	return entities.User{Name: "TestName1", Password: "TestPassword1"}, nil
+// }
+// func (mur mockUserRepository) Update(newUser entities.User) (entities.User, error) {
+// 	return entities.User{Name: "TestName1", Password: "TestPassword1"}, nil
+// }
+// func (mur mockUserRepository) Delete(user_id int) error {
+// 	return nil
+// }

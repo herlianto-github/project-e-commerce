@@ -148,7 +148,7 @@ func (c *ProductController) GetHistoryStockProduct(e echo.Context) error {
 
 	return e.JSON(http.StatusOK, map[string]interface{}{
 		"code":    200,
-		"message": res,
+		"message": "Successful Operation",
 		"data":    res,
 	})
 }
